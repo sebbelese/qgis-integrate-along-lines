@@ -17,7 +17,7 @@ Well, this is quite self-explanatory.
 Maximum step length (smaller = more accurate = slower)
 When the distance between two successive nodes of the polyline is larger than the chosen step, the corresponding line segment is split un sub-segments of length equal or smaller than the step, in order to capture more accurately the variations in the raster field.
 
-Compute integral
+Compute integral:
 Computes the integral. The result appear on the panel below. The two first lines provide the total integral and length for all the features in the vector layer. The following line provide the integral and length feature by feature.
 
 FURTHER DEVELOPMENTS
