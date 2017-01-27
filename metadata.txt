@@ -17,7 +17,7 @@ email=s.blaise@fugro.com
 about=Integrates a raster layer along lines defined in a vector layer.
 
 tracker=https://github.com/sebbelese/qgis-integrate-along-lines/issues
-repository=https://github.com/sebbelese/qgis-integrate-along-lines.git
+repository=https://github.com/sebbelese/qgis-integrate-along-lines
 # End of mandatory metadata
 
 # Recommended items:
@@ -32,7 +32,7 @@ homepage=
 category=Plugins
 icon=icon.png
 # experimental flag
-experimental=True
+experimental=False
 
 # deprecated flag (applies to the whole plugin, not just a single version)
 deprecated=False
