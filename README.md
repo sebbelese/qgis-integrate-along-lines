@@ -14,7 +14,7 @@ Name of the raster layer containing the data to be integrated along the polyline
 Vector layer containing lines along which integration has to be done:
 Well, this is quite self-explanatory.
 
-Maximum step length (smaller = more accurate = slower)
+Maximum step length (smaller = more accurate = slower):
 When the distance between two successive nodes of the polyline is larger than the chosen step, the corresponding line segment is split un sub-segments of length equal or smaller than the step, in order to capture more accurately the variations in the raster field.
 
 Compute integral:
