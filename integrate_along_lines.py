@@ -359,8 +359,8 @@ class RasterDataOnPolylines:
             lengths.append(length)
             lengthsSum += length
 
-        resultStr = "Total integral for all features is %f\n"%(integralSum) 
-        resultStr = resultStr + "Total length for all features is %f\n"%(lengthSum) 
+        resultStr = "Total integral for all features is %f\n"%(integralsSum) 
+        resultStr = resultStr + "Total length for all features is %f\n"%(lengthsSum) 
         for i in range(len(integrals)):
             resultStr = resultStr + "Integral for feature %i is %f\n"%(i,integrals[i])
             resultStr = resultStr + "Length for feature %i is %f\n"%(i,lengths[i])
