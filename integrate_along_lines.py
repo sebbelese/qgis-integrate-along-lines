@@ -1,9 +1,9 @@
 # -*- coding: utf-8 -*-
 """
 /***************************************************************************
- IntegrateAlongLines
+ RasterOnPolylines
                                  A QGIS plugin
- Integrates a raster layer along lines defined in a vector layer
+ 
                               -------------------
         begin                : 2017-01-25
         git sha              : $Format:%H$
@@ -20,24 +20,36 @@
  *                                                                         *
  ***************************************************************************/
 """
-from PyQt4.QtCore import QSettings, QTranslator, qVersion, QCoreApplication, Qt
-from PyQt4.QtGui import QAction, QIcon
+from PyQt4.QtCore import QSettings, QTranslator, qVersion, QCoreApplication, Qt, QFileInfo, QVariant
+from PyQt4.QtGui import QAction, QIcon, QFileDialog, QErrorMessage
 # Initialize Qt resources from file resources.py
 import resources
 
-
+from qgis.core import QgsMapLayerRegistry
+from qgis.core import QgsVectorLayer
 from qgis.core import QgsMapLayer
 from qgis.core import QgsPoint
+from qgis.core import QgsGeometry
+from qgis.core import QgsProject
 from qgis.core import QgsRaster
 from qgis.core import QgsWKBTypes
+from qgis.core import QgsVectorFileWriter
+from qgis.core import QgsFeature
+from qgis.core import QgsFields
+from qgis.core import QgsField
 import numpy as np
 
 # Import the code for the DockWidget
 from integrate_along_lines_dockwidget import IntegrateAlongLinesDockWidget
 import os.path
 
+def dispError(errorMsg):
+        error = QErrorMessage()
+        error.showMessage(errorMsg)
+        error.exec_()
 
-class IntegrateAlongLines:
+
+class RasterDataOnPolylines:
     """QGIS Plugin Implementation."""
 
     def __init__(self, iface):
@@ -59,7 +71,7 @@ class IntegrateAlongLines:
         locale_path = os.path.join(
             self.plugin_dir,
             'i18n',
-            'IntegrateAlongLines_{}.qm'.format(locale))
+            'RasterDataOnPolylines_{}.qm'.format(locale))
 
         if os.path.exists(locale_path):
             self.translator = QTranslator()
@@ -70,12 +82,12 @@ class IntegrateAlongLines:
 
         # Declare instance attributes
         self.actions = []
-        self.menu = self.tr(u'&Integrate Along Lines')
+        self.menu = self.tr(u'&Raster Data On Polylines')
         # TODO: We are going to let the user set this up in a future iteration
-        self.toolbar = self.iface.addToolBar(u'IntegrateAlongLines')
-        self.toolbar.setObjectName(u'IntegrateAlongLines')
+        self.toolbar = self.iface.addToolBar(u'RasterDataOnPolylines')
+        self.toolbar.setObjectName(u'RasterDataOnPolylines')
 
-        #print "** INITIALIZING IntegrateAlongLines"
+        #print "** INITIALIZING RasterDataOnPolylines"
 
         self.pluginIsActive = False
         self.dockwidget = None
@@ -95,7 +107,7 @@ class IntegrateAlongLines:
         :rtype: QString
         """
         # noinspection PyTypeChecker,PyArgumentList,PyCallByClass
-        return QCoreApplication.translate('IntegrateAlongLines', message)
+        return QCoreApplication.translate('RasterDataOnPolylines', message)
 
 
     def add_action(
@@ -175,10 +187,10 @@ class IntegrateAlongLines:
     def initGui(self):
         """Create the menu entries and toolbar icons inside the QGIS GUI."""
 
-        icon_path = ':/plugins/IntegrateAlongLines/icon.png'
+        icon_path = ':/plugins/rasterDataOnPolylines/icon.png'
         self.add_action(
             icon_path,
-            text=self.tr(u'Integrate along lines'),
+            text=self.tr(u'Raster data on polylines'),
             callback=self.run,
             parent=self.iface.mainWindow())
 
@@ -187,7 +199,7 @@ class IntegrateAlongLines:
     def onClosePlugin(self):
         """Cleanup necessary items here when plugin dockwidget is closed"""
 
-        #print "** CLOSING IntegrateAlongLines"
+        #print "** CLOSING RasterDataOnPolylines"
 
         # disconnects
         self.dockwidget.closingPlugin.disconnect(self.onClosePlugin)
@@ -204,11 +216,11 @@ class IntegrateAlongLines:
     def unload(self):
         """Removes the plugin menu item and icon from QGIS GUI."""
 
-        #print "** UNLOAD IntegrateAlongLines"
+        #print "** UNLOAD RasterDataOnPolylines"
 
         for action in self.actions:
             self.iface.removePluginMenu(
-                self.tr(u'&Integrate Along Lines'),
+                self.tr(u'&Raster Data On Polylines'),
                 action)
             self.iface.removeToolBarIcon(action)
         # remove the toolbar
@@ -233,8 +245,12 @@ class IntegrateAlongLines:
                 layers_names_r.append(layer.name())
         self.dockwidget.vectorBox.clear()
         self.dockwidget.rasterBox.clear()
+        self.dockwidget.rasterBox_x.clear()
+        self.dockwidget.rasterBox_y.clear()
         self.dockwidget.vectorBox.addItems(layers_names_v)
         self.dockwidget.rasterBox.addItems(layers_names_r)
+        self.dockwidget.rasterBox_x.addItems(layers_names_r)
+        self.dockwidget.rasterBox_y.addItems(layers_names_r)
 
     def run(self):
         """Run method that loads and starts the plugin"""
@@ -242,7 +258,7 @@ class IntegrateAlongLines:
         if not self.pluginIsActive:
             self.pluginIsActive = True
 
-                       #print "** STARTING IntegrateAlongLines"
+                       #print "** STARTING RasterDataOnPolylines"
 
             # dockwidget may not exist if:
             #    first run of plugin
@@ -261,27 +277,57 @@ class IntegrateAlongLines:
         
         self.dockwidget.computeButton.clicked.connect(self.computeIntegral)
         self.dockwidget.refreshLayers.clicked.connect(self.refreshLayers)
+        self.dockwidget.tabWidget.currentChanged.connect(self.refreshLayers)
+        self.dockwidget.rasterBox.currentIndexChanged.connect(self.selectBand)
+        self.dockwidget.rasterBox_x.currentIndexChanged.connect(self.selectBand_x)
+        self.dockwidget.rasterBox_y.currentIndexChanged.connect(self.selectBand_y)
+        self.dockwidget.browseOutputFile.clicked.connect(self.select_output_file)
+        self.dockwidget.computeComponentsButton.clicked.connect(self.computeComponents)
         self.refreshLayers()
 
+    def selectBand(self):
+        raster = self.layers_r[self.dockwidget.rasterBox.currentIndex()]
+        bands = map(str,range(raster.bandCount()))
+        self.dockwidget.rasterBandBox.clear()
+        self.dockwidget.rasterBandBox.addItems(bands)
+    def selectBand_x(self):
+        raster = self.layers_r[self.dockwidget.rasterBox_x.currentIndex()]
+        bands = map(str,range(raster.bandCount()))
+        self.dockwidget.rasterBandBox_x.clear()
+        self.dockwidget.rasterBandBox_x.addItems(bands)
+    def selectBand_y(self):
+        raster = self.layers_r[self.dockwidget.rasterBox_y.currentIndex()]
+        bands = map(str,range(raster.bandCount()))
+        self.dockwidget.rasterBandBox_y.clear()
+        self.dockwidget.rasterBandBox_y.addItems(bands)
+
     @staticmethod
-    def computeRaster(raster, xMin, yMin, dx, dy, x, y):
-        z = raster.dataProvider().identify(QgsPoint(x,y), QgsRaster.IdentifyFormatValue).results().values()[0]
-        #ix = int(round((x-xMin)/dx))
-        #iy = int(round((y-yMin)/dy))
-        #xn = np.array([ix*dx-dx/2, ix*dx+dx/2])+xMin
-        #yn = np.array([iy*dy-dy/2, iy*dy+dy/2])+yMin
-        #zn = np.zeros((2,2))
-        #for iX in range(2):
-        #    for iY in range(2):
-        #        zn[iX][iY] = raster.dataProvider().identify(QgsPoint(xn[iX],yn[iY]), QgsRaster.IdentifyFormatValue).results().values()[0]
-        #z0 = ((xn[1] - x)/dx)*zn[0][0] + ((x - xn[0])/dx)*zn[1][0]
-        #z1 = ((xn[1] - x)/dx)*zn[0][1] + ((x - xn[0])/dx)*zn[1][1]
-        #z = ((yn[1] - y)/dy)*z0 + ((y - yn[0])/dy)*z1
+    def computeRaster(raster, rasterBand, xMin, yMin, dx, dy, x, y):
+        z = raster.dataProvider().identify(QgsPoint(x,y), QgsRaster.IdentifyFormatValue).results().values()[rasterBand]
         return z
 
+    @staticmethod
+    def splitPolyLine(oldPoints, maxRes):
+            points = [oldPoints[0]]
+            xOld = oldPoints[0][0]
+            yOld = oldPoints[0][1]
+            for iPt in np.arange(1, len(oldPoints)):
+                x = oldPoints[iPt][0]
+                y = oldPoints[iPt][1]
+                dist = np.linalg.norm(np.array([x-xOld, y-yOld]))
+                if (dist > 0): 
+                    nbPoints = int(np.ceil(dist / maxRes))+1
+                    toAdds = np.transpose([np.linspace(xOld, x, nbPoints)[1:], np.linspace(yOld, y, nbPoints)[1:]]).tolist()
+                    for toAdd in toAdds:
+                        points.append(toAdd)
+                    xOld = x
+                    yOld = y
+            return points
+
     def computeIntegral(self):
-        self.maxRes = float(self.dockwidget.maxStep.toPlainText())
+        print("Integrating along line")
         raster = self.layers_r[self.dockwidget.rasterBox.currentIndex()]
+        rasterBand = int(self.dockwidget.rasterBandBox.currentText()) 
         ext = raster.extent()
         xMin = ext.xMinimum();
         yMin = ext.yMinimum();
@@ -296,27 +342,14 @@ class IntegrateAlongLines:
             integral = 0
             length = 0
             pointsLines = line.geometry().asPolyline()
-            points = [pointsLines[0]]
-            xOld = pointsLines[0][0]
-            yOld = pointsLines[0][1]
-            for iPt in np.arange(1, len(pointsLines)):
-                x = pointsLines[iPt][0]
-                y = pointsLines[iPt][1]
-                dist = np.linalg.norm(np.array([x-xOld, y-yOld]))
-                if (dist > 0): 
-                    nbPoints = int(np.ceil(dist / self.maxRes))+1
-                    toAdds = np.transpose([np.linspace(xOld, x, nbPoints)[1:], np.linspace(yOld, y, nbPoints)[1:]]).tolist()
-                    for toAdd in toAdds:
-                        points.append(toAdd)
-                    xOld = x
-                    yOld = y
+            points = self.splitPolyLine(pointsLines, float(self.dockwidget.maxStep.value()))
             xOld = points[0][0]
             yOld = points[0][1]
-            zOld = self.computeRaster(raster, xMin, yMin, dx, dy, xOld, yOld)
+            zOld = self.computeRaster(raster, rasterBand, xMin, yMin, dx, dy, xOld, yOld)
             for iPt in np.arange(1, len(points)):
                 x = points[iPt][0]
                 y = points[iPt][1]
-                z = self.computeRaster(raster, xMin, yMin, dx, dy, x, y)
+                z = self.computeRaster(raster, rasterBand, xMin, yMin, dx, dy, x, y)
                 integral += 0.5 * (z+zOld) * np.linalg.norm(np.array([x-xOld, y-yOld]))
                 length += np.linalg.norm(np.array([x-xOld, y-yOld]))
                 xOld = x
@@ -335,3 +368,68 @@ class IntegrateAlongLines:
 
 
         self.dockwidget.integralDisplay.setText(resultStr);
+
+    def computeComponents(self):
+       print("Computing normal and vector components")
+       raster_x = self.layers_r[self.dockwidget.rasterBox_x.currentIndex()]
+       rasterBand_x = int(self.dockwidget.rasterBandBox_x.currentText()) 
+       ext_x = raster_x.extent()
+       xMin_x = ext_x.xMinimum();
+       yMin_x = ext_x.yMinimum();
+       dx_x = raster_x.rasterUnitsPerPixelX()
+       dy_x = raster_x.rasterUnitsPerPixelY()
+       raster_y = self.layers_r[self.dockwidget.rasterBox_y.currentIndex()]
+       rasterBand_y = int(self.dockwidget.rasterBandBox_y.currentText()) 
+       ext_y = raster_y.extent()
+       xMin_y = ext_y.xMinimum();
+       yMin_y = ext_y.yMinimum();
+       dx_y = raster_y.rasterUnitsPerPixelX()
+       dy_y = raster_y.rasterUnitsPerPixelY()
+       lines = self.layers_v[self.dockwidget.vectorBox.currentIndex()]
+       provider = lines.dataProvider()
+       fields = QgsFields()
+       normalComponent = QgsField("normal", QVariant.Double)
+       tangentComponent = QgsField("tangent", QVariant.Double)
+       fields.append(normalComponent)
+       fields.append(tangentComponent)
+       writer = QgsVectorFileWriter(self.dockwidget.outputFile.text(), "CP1250", fields, provider.geometryType(), provider.crs(), "ESRI Shapefile") 
+       # iterating over the input layer
+       for line in lines.getFeatures():
+           pointsLines = line.geometry().asPolyline()
+           points = np.array(self.splitPolyLine(pointsLines, float(self.dockwidget.maxStep.value())))
+
+           nbPoints = points.shape[0]
+           if (nbPoints > 1):
+               segments = points[1:,:] - points[:nbPoints-1,:]
+               norms = np.sqrt(segments[:,0]*segments[:,0] + segments[:,1]*segments[:,1]) 
+               tangentx = segments[:,0]/norms
+               tangenty = segments[:,1]/norms
+               normalx = tangenty
+               normaly = -tangentx
+               normalx.shape
+               for iPt in np.arange(0, nbPoints-1):
+                   x = 0.5*(points[iPt,0]+points[iPt+1,0])
+                   y = 0.5*(points[iPt,1]+points[iPt+1,1])
+                   rx = self.computeRaster(raster_x, rasterBand_x, xMin_x, yMin_x, dx_x, dy_x, x, y)
+                   if (not rx):
+                       rx = 0
+                   ry = self.computeRaster(raster_y, rasterBand_y, xMin_y, yMin_y, dx_y, dy_y, x, y)
+                   if (not ry):
+                       ry = 0
+                   segment = QgsFeature()
+                   geom = QgsGeometry()
+                   gLine = QgsGeometry.fromPolyline([QgsPoint(points[iPt,0],points[iPt,1]), QgsPoint(points[iPt+1,0],points[iPt+1,1])])
+                   segment.setGeometry(gLine)
+                   segment.setFields(fields)
+                   segment.setAttribute("normal", float(rx*normalx[iPt]+ry*normaly[iPt]))
+                   segment.setAttribute("tangent", float(rx*tangentx[iPt]+ry*tangenty[iPt]))
+                   writer.addFeature(segment)
+       if (self.dockwidget.loadToCanvas.isChecked()):
+            layer = self.iface.addVectorLayer(self.dockwidget.outputFile.text(),"test","ogr")
+            if not layer:
+                dispError("Layer failed to load!")
+
+
+    def select_output_file(self):
+        outputName = QFileDialog.getSaveFileName(self.dockwidget, "Select output layer file ", QFileInfo(QgsProject.instance().fileName()).absolutePath(),"ESRI Shapefile (*.shp)")
+        self.dockwidget.outputFile.setText(outputName)

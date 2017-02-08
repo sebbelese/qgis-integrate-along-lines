@@ -1,7 +1,7 @@
 #/***************************************************************************
-# IntegrateAlongLines
+# RasterOnPolylines 
 #
-# Integrates a raster layer along lines defined in a vector layer
+# 
 #							 -------------------
 #		begin				: 2017-01-25
 #		git sha				: $Format:%H$
@@ -40,7 +40,7 @@ SOURCES = \
 	__init__.py \
 	integrate_along_lines.py integrate_along_lines_dockwidget.py
 
-PLUGINNAME = IntegrateAlongLines
+PLUGINNAME = RasterOnPolylines
 
 PY_FILES = \
 	__init__.py \
