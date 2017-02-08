@@ -303,8 +303,7 @@ class RasterDataOnPolylines:
 
     @staticmethod
     def computeRaster(raster, rasterBand, xMin, yMin, dx, dy, x, y):
-        z = raster.dataProvider().identify(QgsPoint(x,y), QgsRaster.IdentifyFormatValue).results().values()[rasterBand]
-        return z
+        return raster.dataProvider().identify(QgsPoint(x,y), QgsRaster.IdentifyFormatValue).results().values()[rasterBand]
 
     @staticmethod
     def splitPolyLine(oldPoints, maxRes):
