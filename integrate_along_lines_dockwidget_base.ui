@@ -6,13 +6,13 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>529</width>
+    <width>546</width>
     <height>552</height>
    </rect>
   </property>
   <property name="minimumSize">
    <size>
-    <width>529</width>
+    <width>546</width>
     <height>111</height>
    </size>
   </property>
@@ -31,7 +31,7 @@
         <rect>
          <x>0</x>
          <y>0</y>
-         <width>509</width>
+         <width>526</width>
          <height>510</height>
         </rect>
        </property>
@@ -56,12 +56,12 @@
          <rect>
           <x>10</x>
           <y>134</y>
-          <width>491</width>
+          <width>511</width>
           <height>361</height>
          </rect>
         </property>
         <property name="currentIndex">
-         <number>1</number>
+         <number>2</number>
         </property>
         <widget class="QWidget" name="tab_3">
          <attribute name="title">
@@ -342,6 +342,176 @@ p, li { white-space: pre-wrap; }
           </property>
           <property name="text">
            <string>Force positive values</string>
+          </property>
+         </widget>
+        </widget>
+        <widget class="QWidget" name="tab_2">
+         <attribute name="title">
+          <string>Split</string>
+         </attribute>
+         <widget class="QPushButton" name="splitButton">
+          <property name="geometry">
+           <rect>
+            <x>20</x>
+            <y>90</y>
+            <width>461</width>
+            <height>23</height>
+           </rect>
+          </property>
+          <property name="sizePolicy">
+           <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
+            <horstretch>0</horstretch>
+            <verstretch>0</verstretch>
+           </sizepolicy>
+          </property>
+          <property name="text">
+           <string>Split polyline into a sucession of 2-nodes lines</string>
+          </property>
+         </widget>
+         <widget class="QCheckBox" name="loadToCanvas_split">
+          <property name="geometry">
+           <rect>
+            <x>20</x>
+            <y>60</y>
+            <width>151</width>
+            <height>17</height>
+           </rect>
+          </property>
+          <property name="text">
+           <string>Load to canvas</string>
+          </property>
+         </widget>
+         <widget class="QLineEdit" name="outputFile_split">
+          <property name="geometry">
+           <rect>
+            <x>20</x>
+            <y>30</y>
+            <width>411</width>
+            <height>20</height>
+           </rect>
+          </property>
+         </widget>
+         <widget class="QPushButton" name="browseOutputFile_split">
+          <property name="geometry">
+           <rect>
+            <x>440</x>
+            <y>30</y>
+            <width>41</width>
+            <height>23</height>
+           </rect>
+          </property>
+          <property name="text">
+           <string>...</string>
+          </property>
+         </widget>
+         <widget class="QLabel" name="label_12">
+          <property name="geometry">
+           <rect>
+            <x>20</x>
+            <y>10</y>
+            <width>490</width>
+            <height>13</height>
+           </rect>
+          </property>
+          <property name="text">
+           <string>Output layer filename</string>
+          </property>
+         </widget>
+        </widget>
+        <widget class="QWidget" name="tab">
+         <attribute name="title">
+          <string>Add raster data to line</string>
+         </attribute>
+         <widget class="QLabel" name="label_10">
+          <property name="geometry">
+           <rect>
+            <x>10</x>
+            <y>10</y>
+            <width>490</width>
+            <height>13</height>
+           </rect>
+          </property>
+          <property name="text">
+           <string>Raster layer to get data from</string>
+          </property>
+         </widget>
+         <widget class="QComboBox" name="rasterBox_data">
+          <property name="geometry">
+           <rect>
+            <x>10</x>
+            <y>30</y>
+            <width>401</width>
+            <height>20</height>
+           </rect>
+          </property>
+         </widget>
+         <widget class="QComboBox" name="rasterBandBox_data">
+          <property name="geometry">
+           <rect>
+            <x>430</x>
+            <y>30</y>
+            <width>41</width>
+            <height>20</height>
+           </rect>
+          </property>
+         </widget>
+         <widget class="QLabel" name="label_11">
+          <property name="geometry">
+           <rect>
+            <x>10</x>
+            <y>60</y>
+            <width>490</width>
+            <height>13</height>
+           </rect>
+          </property>
+          <property name="text">
+           <string>Field name</string>
+          </property>
+         </widget>
+         <widget class="QLineEdit" name="newFieldName">
+          <property name="geometry">
+           <rect>
+            <x>10</x>
+            <y>80</y>
+            <width>461</width>
+            <height>20</height>
+           </rect>
+          </property>
+         </widget>
+         <widget class="QPushButton" name="addRasterDataButton">
+          <property name="geometry">
+           <rect>
+            <x>10</x>
+            <y>110</y>
+            <width>461</width>
+            <height>23</height>
+           </rect>
+          </property>
+          <property name="sizePolicy">
+           <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
+            <horstretch>0</horstretch>
+            <verstretch>0</verstretch>
+           </sizepolicy>
+          </property>
+          <property name="text">
+           <string>Compute normal/tangent components</string>
+          </property>
+         </widget>
+         <widget class="QTextBrowser" name="boundsDisplay_data">
+          <property name="geometry">
+           <rect>
+            <x>10</x>
+            <y>140</y>
+            <width>461</width>
+            <height>91</height>
+           </rect>
+          </property>
+          <property name="html">
+           <string>&lt;!DOCTYPE HTML PUBLIC &quot;-//W3C//DTD HTML 4.0//EN&quot; &quot;http://www.w3.org/TR/REC-html40/strict.dtd&quot;&gt;
+&lt;html&gt;&lt;head&gt;&lt;meta name=&quot;qrichtext&quot; content=&quot;1&quot; /&gt;&lt;style type=&quot;text/css&quot;&gt;
+p, li { white-space: pre-wrap; }
+&lt;/style&gt;&lt;/head&gt;&lt;body style=&quot; font-family:'MS Shell Dlg 2'; font-size:8.25pt; font-weight:400; font-style:normal;&quot;&gt;
+&lt;p style=&quot;-qt-paragraph-type:empty; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px; font-size:8pt;&quot;&gt;&lt;br /&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
           </property>
          </widget>
         </widget>

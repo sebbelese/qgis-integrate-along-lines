@@ -253,6 +253,7 @@ class RasterDataOnPolylines:
         self.dockwidget.rasterBox.addItems(layers_names_r)
         self.dockwidget.rasterBox_x.addItems(layers_names_r)
         self.dockwidget.rasterBox_y.addItems(layers_names_r)
+        self.dockwidget.rasterBox_data.addItems(layers_names_r)
 
     def run(self):
         """Run method that loads and starts the plugin"""
@@ -283,8 +284,12 @@ class RasterDataOnPolylines:
         self.dockwidget.rasterBox.currentIndexChanged.connect(self.selectBand)
         self.dockwidget.rasterBox_x.currentIndexChanged.connect(self.selectBand_x)
         self.dockwidget.rasterBox_y.currentIndexChanged.connect(self.selectBand_y)
+        self.dockwidget.rasterBox_data.currentIndexChanged.connect(self.selectBand_data)
         self.dockwidget.browseOutputFile.clicked.connect(self.select_output_file)
         self.dockwidget.computeComponentsButton.clicked.connect(self.computeComponents)
+        self.dockwidget.addRasterDataButton.clicked.connect(self.addRasterData)
+        self.dockwidget.splitButton.clicked.connect(self.split)
+        self.dockwidget.browseOutputFile_split.clicked.connect(self.select_output_file_split)
         self.refreshLayers()
 
     def selectBand(self):
@@ -302,7 +307,12 @@ class RasterDataOnPolylines:
         bands = map(str,range(raster.bandCount()))
         self.dockwidget.rasterBandBox_y.clear()
         self.dockwidget.rasterBandBox_y.addItems(bands)
-
+    def selectBand_data(self):
+        raster = self.layers_r[self.dockwidget.rasterBox_data.currentIndex()]
+        bands = map(str,range(raster.bandCount()))
+        self.dockwidget.rasterBandBox_data.clear()
+        self.dockwidget.rasterBandBox_data.addItems(bands)
+    
     @staticmethod
     def computeRaster(raster, rasterBand, xMin, yMin, dx, dy, x, y):
         r = raster.dataProvider().identify(QgsPoint(x,y), QgsRaster.IdentifyFormatValue).results().values()[rasterBand]
@@ -400,7 +410,6 @@ class RasterDataOnPolylines:
        fields.append(normalComponent)
        fields.append(tangentComponent)
        writer = QgsVectorFileWriter(self.dockwidget.outputFile.text(), "CP1250", fields, provider.geometryType(), provider.crs(), "ESRI Shapefile") 
-       # iterating over the input layer
        maxNormal = -sys.float_info.max
        minNormal = sys.float_info.max
        maxTangent = -sys.float_info.max
@@ -418,7 +427,6 @@ class RasterDataOnPolylines:
                    tangenty = segments[:,1]/norms
                    normalx = tangenty
                    normaly = -tangentx
-                   normalx.shape
                    for iPt in np.arange(0, nbPoints-1):
                        x = 0.5*(points[iPt,0]+points[iPt+1,0])
                        y = 0.5*(points[iPt,1]+points[iPt+1,1])
@@ -452,6 +460,70 @@ class RasterDataOnPolylines:
                 dispError("Layer failed to load!")
 
 
+    def split(self):
+       print("Splitting polylines")
+       lines = self.layers_v[self.dockwidget.vectorBox.currentIndex()]
+       provider = lines.dataProvider()
+       fields = QgsFields()
+       writer = QgsVectorFileWriter(self.dockwidget.outputFile_split.text(), "CP1250", fields, provider.geometryType(), provider.crs(), "ESRI Shapefile") 
+       for line in lines.getFeatures():
+           geometry = line.geometry();
+           if (geometry is not None):
+               pointsLines = geometry.asPolyline()
+               if (len(pointsLines) > 1):
+                   points = np.array(self.splitPolyLine(pointsLines, float(self.dockwidget.maxStep.value())))
+                   nbPoints = points.shape[0]
+                   for iPt in np.arange(0, nbPoints-1):
+                       segment = QgsFeature()
+                       geom = QgsGeometry()
+                       gLine = QgsGeometry.fromPolyline([QgsPoint(points[iPt,0],points[iPt,1]), QgsPoint(points[iPt+1,0],points[iPt+1,1])])
+                       segment.setGeometry(gLine)
+                       writer.addFeature(segment)
+       if (self.dockwidget.loadToCanvas_split.isChecked()):
+            layer = self.iface.addVectorLayer(self.dockwidget.outputFile_split.text(),os.path.splitext(basename(self.dockwidget.outputFile_split.text()))[0],"ogr")
+            if not layer:
+                dispError("Layer failed to load!")
+
+    def addRasterData(self):
+       print("Adding raster data to lines")
+       raster = self.layers_r[self.dockwidget.rasterBox_data.currentIndex()]
+       rasterBand = int(self.dockwidget.rasterBandBox_data.currentText()) 
+       ext = raster.extent()
+       xMin = ext.xMinimum();
+       yMin = ext.yMinimum();
+       dx = raster.rasterUnitsPerPixelX()
+       dy = raster.rasterUnitsPerPixelY()
+       lines = self.layers_v[self.dockwidget.vectorBox.currentIndex()]
+       lines.startEditing()
+       provider = lines.dataProvider()
+       newField = QgsField(self.dockwidget.newFieldName.text(), QVariant.Double)
+       lines.dataProvider().addAttributes([newField])
+       lines.updateFields()
+       fieldId = provider.fieldNameIndex(self.dockwidget.newFieldName.text())
+       # iterating over the input layer
+       maxVal = -sys.float_info.max
+       minVal = sys.float_info.max
+       for line in lines.getFeatures():
+           geometry = line.geometry();
+           if (geometry is not None):
+               pointsLines = geometry.asPolyline()
+               if (len(pointsLines) != 2):
+                   dispError("Polylines should be split into a sequence of 2-nodes lines to allow storing variable data. Use Split before")
+                   return
+               else:
+                   x = 0.5 * (pointsLines[0][0] + pointsLines[1][0])
+                   y = 0.5 * (pointsLines[0][1] + pointsLines[1][1])
+                   r = float(self.computeRaster(raster, rasterBand, xMin, yMin, dx, dy, x, y))
+                   lines.changeAttributeValue(line.id(), fieldId, r)
+                   maxVal = max(r, maxVal)
+                   minVal = min(r, minVal)
+       boundsStr = "Min value along line: %f\n"%minVal 
+       boundsStr = boundsStr + "Max value along line: %f\n"%maxVal 
+       self.dockwidget.boundsDisplay_data.setText(boundsStr);
+       lines.commitChanges()
     def select_output_file(self):
         outputName = QFileDialog.getSaveFileName(self.dockwidget, "Select output layer file ", QFileInfo(QgsProject.instance().fileName()).absolutePath(),"ESRI Shapefile (*.shp)")
         self.dockwidget.outputFile.setText(outputName)
+    def select_output_file_split(self):
+        outputName = QFileDialog.getSaveFileName(self.dockwidget, "Select output layer file ", QFileInfo(QgsProject.instance().fileName()).absolutePath(),"ESRI Shapefile (*.shp)")
+        self.dockwidget.outputFile_split.setText(outputName)
