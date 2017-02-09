@@ -303,7 +303,10 @@ class RasterDataOnPolylines:
 
     @staticmethod
     def computeRaster(raster, rasterBand, xMin, yMin, dx, dy, x, y):
-        return raster.dataProvider().identify(QgsPoint(x,y), QgsRaster.IdentifyFormatValue).results().values()[rasterBand]
+        r = raster.dataProvider().identify(QgsPoint(x,y), QgsRaster.IdentifyFormatValue).results().values()[rasterBand]
+        if (not r):
+            r = 0
+        return r
 
     @staticmethod
     def splitPolyLine(oldPoints, maxRes):
@@ -340,24 +343,27 @@ class RasterDataOnPolylines:
         for line in lines.getFeatures():
             integral = 0
             length = 0
-            pointsLines = line.geometry().asPolyline()
-            points = self.splitPolyLine(pointsLines, float(self.dockwidget.maxStep.value()))
-            xOld = points[0][0]
-            yOld = points[0][1]
-            zOld = self.computeRaster(raster, rasterBand, xMin, yMin, dx, dy, xOld, yOld)
-            for iPt in np.arange(1, len(points)):
-                x = points[iPt][0]
-                y = points[iPt][1]
-                z = self.computeRaster(raster, rasterBand, xMin, yMin, dx, dy, x, y)
-                integral += 0.5 * (z+zOld) * np.linalg.norm(np.array([x-xOld, y-yOld]))
-                length += np.linalg.norm(np.array([x-xOld, y-yOld]))
-                xOld = x
-                yOld = y
-                zOld = z
-            integrals.append(integral)
-            integralsSum += integral
-            lengths.append(length)
-            lengthsSum += length
+            geometry = line.geometry();
+            if (geometry is not None):
+                pointsLines = geometry.asPolyline()
+                if (len(pointsLines) > 1):
+                    points = self.splitPolyLine(pointsLines, float(self.dockwidget.maxStep.value()))
+                    xOld = points[0][0]
+                    yOld = points[0][1]
+                    zOld = self.computeRaster(raster, rasterBand, xMin, yMin, dx, dy, xOld, yOld)
+                    for iPt in np.arange(1, len(points)):
+                        x = points[iPt][0]
+                        y = points[iPt][1]
+                        z = self.computeRaster(raster, rasterBand, xMin, yMin, dx, dy, x, y)
+                        integral += 0.5 * (z+zOld) * np.linalg.norm(np.array([x-xOld, y-yOld]))
+                        length += np.linalg.norm(np.array([x-xOld, y-yOld]))
+                        xOld = x
+                        yOld = y
+                        zOld = z
+                    integrals.append(integral)
+                    integralsSum += integral
+                    lengths.append(length)
+                    lengthsSum += length
 
         resultStr = "Total integral for all features is %f\n"%(integralsSum) 
         resultStr = resultStr + "Total length for all features is %f\n"%(lengthsSum) 
@@ -394,35 +400,33 @@ class RasterDataOnPolylines:
        writer = QgsVectorFileWriter(self.dockwidget.outputFile.text(), "CP1250", fields, provider.geometryType(), provider.crs(), "ESRI Shapefile") 
        # iterating over the input layer
        for line in lines.getFeatures():
-           pointsLines = line.geometry().asPolyline()
-           points = np.array(self.splitPolyLine(pointsLines, float(self.dockwidget.maxStep.value())))
-
-           nbPoints = points.shape[0]
-           if (nbPoints > 1):
-               segments = points[1:,:] - points[:nbPoints-1,:]
-               norms = np.sqrt(segments[:,0]*segments[:,0] + segments[:,1]*segments[:,1]) 
-               tangentx = segments[:,0]/norms
-               tangenty = segments[:,1]/norms
-               normalx = tangenty
-               normaly = -tangentx
-               normalx.shape
-               for iPt in np.arange(0, nbPoints-1):
-                   x = 0.5*(points[iPt,0]+points[iPt+1,0])
-                   y = 0.5*(points[iPt,1]+points[iPt+1,1])
-                   rx = self.computeRaster(raster_x, rasterBand_x, xMin_x, yMin_x, dx_x, dy_x, x, y)
-                   if (not rx):
-                       rx = 0
-                   ry = self.computeRaster(raster_y, rasterBand_y, xMin_y, yMin_y, dx_y, dy_y, x, y)
-                   if (not ry):
-                       ry = 0
-                   segment = QgsFeature()
-                   geom = QgsGeometry()
-                   gLine = QgsGeometry.fromPolyline([QgsPoint(points[iPt,0],points[iPt,1]), QgsPoint(points[iPt+1,0],points[iPt+1,1])])
-                   segment.setGeometry(gLine)
-                   segment.setFields(fields)
-                   segment.setAttribute("normal", float(rx*normalx[iPt]+ry*normaly[iPt]))
-                   segment.setAttribute("tangent", float(rx*tangentx[iPt]+ry*tangenty[iPt]))
-                   writer.addFeature(segment)
+           geometry = line.geometry();
+           if (geometry is not None):
+               pointsLines = geometry.asPolyline()
+               if (len(pointsLines) > 1):
+                   points = np.array(self.splitPolyLine(pointsLines, float(self.dockwidget.maxStep.value())))
+                   nbPoints = points.shape[0]
+                   segments = points[1:,:] - points[:nbPoints-1,:]
+                   norms = np.sqrt(segments[:,0]*segments[:,0] + segments[:,1]*segments[:,1]) 
+                   tangentx = segments[:,0]/norms
+                   tangenty = segments[:,1]/norms
+                   normalx = tangenty
+                   normaly = -tangentx
+                   normalx.shape
+                   for iPt in np.arange(0, nbPoints-1):
+                       x = 0.5*(points[iPt,0]+points[iPt+1,0])
+                       y = 0.5*(points[iPt,1]+points[iPt+1,1])
+                       rx = self.computeRaster(raster_x, rasterBand_x, xMin_x, yMin_x, dx_x, dy_x, x, y)
+                       ry = self.computeRaster(raster_y, rasterBand_y, xMin_y, yMin_y, dx_y, dy_y, x, y)
+                       segment = QgsFeature()
+                       geom = QgsGeometry()
+                       gLine = QgsGeometry.fromPolyline([QgsPoint(points[iPt,0],points[iPt,1]), QgsPoint(points[iPt+1,0],points[iPt+1,1])])
+                       segment.setGeometry(gLine)
+                       segment.setFields(fields)
+                       print(rx*normalx[iPt]+ry*normaly[iPt])
+                       segment.setAttribute("normal", float(rx*normalx[iPt]+ry*normaly[iPt]))
+                       segment.setAttribute("tangent", float(rx*tangentx[iPt]+ry*tangenty[iPt]))
+                       writer.addFeature(segment)
        if (self.dockwidget.loadToCanvas.isChecked()):
             layer = self.iface.addVectorLayer(self.dockwidget.outputFile.text(),"test","ogr")
             if not layer:
