@@ -61,7 +61,7 @@
          </rect>
         </property>
         <property name="currentIndex">
-         <number>2</number>
+         <number>3</number>
         </property>
         <widget class="QWidget" name="tab_3">
          <attribute name="title">
@@ -494,7 +494,7 @@ p, li { white-space: pre-wrap; }
            </sizepolicy>
           </property>
           <property name="text">
-           <string>Compute normal/tangent components</string>
+           <string>Add raster data to line</string>
           </property>
          </widget>
          <widget class="QTextBrowser" name="boundsDisplay_data">
