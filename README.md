@@ -54,7 +54,7 @@ TAB3: Split
 -----------
 Splits each polyline of a polyline layer into small pieces of max length specified by the "Maximum step length" option. Polylines are split into a succession of 2-nodes lines, such that Fields can be defined differently on each segment.
 
-Tab4: Add raster data to line
+TAB4: Add raster data to line
 -----------------------------
 Extract data from the specified raster and create a new field on the vector layer, whose value is the raster data at the corresponding location on the line. Polylines need to be split into a succession of 2-nodes lines to allow the storage of fields which are different on each segment. Use the Split tool before if this is not the case.
 

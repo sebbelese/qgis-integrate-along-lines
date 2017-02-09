@@ -189,7 +189,7 @@ class RasterDataOnPolylines:
     def initGui(self):
         """Create the menu entries and toolbar icons inside the QGIS GUI."""
 
-        icon_path = ':/plugins/rasterDataOnPolylines/icon.png'
+        icon_path = ':/plugins/qgis-raster-data-on-polylines/icon.png'
         self.add_action(
             icon_path,
             text=self.tr(u'Raster data on polylines'),
