@@ -9,7 +9,7 @@
 [general]
 name=Raster Data On Polylines
 qgisMinimumVersion=2.0
-description=Extract raster data along polylines and compute integrals, normal and tangent components.
+description=Extract and manipulate raster data along polylines. Compute integrals, normal and tangent components.
 version=0.1
 author=Sebastien Blaise
 email=s.blaise@fugro.com
@@ -28,7 +28,7 @@ repository=https://github.com/sebbelese/qgis-integrate-along-lines
 # Tags are comma separated with spaces allowed
 tags=
 
-homepage=
+homepage=https://github.com/sebbelese/qgis-integrate-along-lines/
 category=Plugins
 icon=icon.png
 # experimental flag
