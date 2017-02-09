@@ -24,6 +24,7 @@ from PyQt4.QtCore import QSettings, QTranslator, qVersion, QCoreApplication, Qt,
 from PyQt4.QtGui import QAction, QIcon, QFileDialog, QErrorMessage
 # Initialize Qt resources from file resources.py
 import resources
+from os.path import basename
 
 from qgis.core import QgsMapLayerRegistry
 from qgis.core import QgsVectorLayer
@@ -38,6 +39,7 @@ from qgis.core import QgsFeature
 from qgis.core import QgsFields
 from qgis.core import QgsField
 import numpy as np
+import sys
 
 # Import the code for the DockWidget
 from integrate_along_lines_dockwidget import IntegrateAlongLinesDockWidget
@@ -399,6 +401,10 @@ class RasterDataOnPolylines:
        fields.append(tangentComponent)
        writer = QgsVectorFileWriter(self.dockwidget.outputFile.text(), "CP1250", fields, provider.geometryType(), provider.crs(), "ESRI Shapefile") 
        # iterating over the input layer
+       maxNormal = -sys.float_info.max
+       minNormal = sys.float_info.max
+       maxTangent = -sys.float_info.max
+       minTangent = sys.float_info.max
        for line in lines.getFeatures():
            geometry = line.geometry();
            if (geometry is not None):
@@ -423,12 +429,25 @@ class RasterDataOnPolylines:
                        gLine = QgsGeometry.fromPolyline([QgsPoint(points[iPt,0],points[iPt,1]), QgsPoint(points[iPt+1,0],points[iPt+1,1])])
                        segment.setGeometry(gLine)
                        segment.setFields(fields)
-                       print(rx*normalx[iPt]+ry*normaly[iPt])
-                       segment.setAttribute("normal", float(rx*normalx[iPt]+ry*normaly[iPt]))
-                       segment.setAttribute("tangent", float(rx*tangentx[iPt]+ry*tangenty[iPt]))
+                       normal = float(rx*normalx[iPt]+ry*normaly[iPt]) 
+                       tangent = float(rx*tangentx[iPt]+ry*tangenty[iPt]) 
+                       if (self.dockwidget.forcePositive.isChecked()):
+                           normal = abs(normal)
+                           tangent = abs(tangent)
+                       segment.setAttribute("normal", normal)
+                       segment.setAttribute("tangent", tangent)
+                       maxNormal = max(normal, maxNormal)
+                       minNormal = min(normal, minNormal)
+                       maxTangent = max(normal, maxTangent)
+                       minTangent = min(normal, minTangent)
                        writer.addFeature(segment)
+       boundsStr = "Min normal component: %f\n"%minNormal 
+       boundsStr = boundsStr + "Max normal component: %f\n"%maxNormal 
+       boundsStr = boundsStr + "Min tangent component: %f\n"%minTangent 
+       boundsStr = boundsStr + "Max tangent component: %f\n"%maxTangent 
+       self.dockwidget.boundsDisplay.setText(boundsStr);
        if (self.dockwidget.loadToCanvas.isChecked()):
-            layer = self.iface.addVectorLayer(self.dockwidget.outputFile.text(),"test","ogr")
+            layer = self.iface.addVectorLayer(self.dockwidget.outputFile.text(),os.path.splitext(basename(self.dockwidget.outputFile.text()))[0],"ogr")
             if not layer:
                 dispError("Layer failed to load!")
 
