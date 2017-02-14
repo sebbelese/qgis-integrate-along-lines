@@ -290,6 +290,7 @@ class RasterDataOnPolylines:
         self.dockwidget.addRasterDataButton.clicked.connect(self.addRasterData)
         self.dockwidget.splitButton.clicked.connect(self.split)
         self.dockwidget.browseOutputFile_split.clicked.connect(self.select_output_file_split)
+        self.dockwidget.exportCsv.clicked.connect(self.exportCsv)
         self.refreshLayers()
 
     def selectBand(self):
@@ -527,3 +528,35 @@ class RasterDataOnPolylines:
     def select_output_file_split(self):
         outputName = QFileDialog.getSaveFileName(self.dockwidget, "Select output layer file ", QFileInfo(QgsProject.instance().fileName()).absolutePath(),"ESRI Shapefile (*.shp)")
         self.dockwidget.outputFile_split.setText(outputName)
+    def exportCsv(self):
+        outputName = QFileDialog.getSaveFileName(self.dockwidget, "Select output file ", QFileInfo(QgsProject.instance().fileName()).absolutePath(),"Comma Separated Values (*.csv)")
+        print("Exporting CSV")
+        lines = self.layers_v[self.dockwidget.vectorBox.currentIndex()]
+        provider = lines.dataProvider()
+        nbFields = provider.fields().count()
+        fieldsNames = []
+        for field in provider.fields():
+            fieldsNames.append(field.name())
+        data = []
+        for line in lines.getFeatures():
+           geometry = line.geometry();
+           if (geometry is not None):
+               pointsLines = geometry.asPolyline()
+               for point in pointsLines:
+                   data1 = [point[0], point[1]]
+                   for iF in range(nbFields):
+                       data1.append(float(line.attribute(fieldsNames[iF])))
+                   data.append(data1)
+
+               #if (len(pointsLines) != 2):
+               #    dispError("Polylines should be split into a sequence of 2-nodes lines to allow storing variable data. Use Split before")
+               #    return
+               #else:
+               #    n1data = [pointsLines[0][0], pointsLines[0][1]];
+               #    n2data = [pointsLines[1][0], pointsLines[1][1]];
+               #    for iF in range (nbFields):
+               #     n1data.append(float(line.attribute(fieldsNames[iF])))
+               #     n2data.append(float(line.attribute(fieldsNames[iF])))
+               #data.append(n1data)
+               #data.append(n2data)
+        np.savetxt(outputName, np.array(data), delimiter=",")

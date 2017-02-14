@@ -38,7 +38,7 @@
        <property name="minimumSize">
         <size>
          <width>0</width>
-         <height>468</height>
+         <height>510</height>
         </size>
        </property>
        <widget class="QComboBox" name="vectorBox">
@@ -57,7 +57,7 @@
           <x>10</x>
           <y>134</y>
           <width>511</width>
-          <height>361</height>
+          <height>341</height>
          </rect>
         </property>
         <property name="currentIndex">
@@ -152,7 +152,7 @@ p, li { white-space: pre-wrap; }
         </widget>
         <widget class="QWidget" name="tab_4">
          <attribute name="title">
-          <string>Compute normal/tangent components</string>
+          <string>Compute N/T components</string>
          </attribute>
          <widget class="QComboBox" name="rasterBandBox_x">
           <property name="geometry">
@@ -569,6 +569,19 @@ p, li { white-space: pre-wrap; }
         </property>
         <property name="text">
          <string>Maximum step length (smaller = more accurate = slower)</string>
+        </property>
+       </widget>
+       <widget class="QPushButton" name="exportCsv">
+        <property name="geometry">
+         <rect>
+          <x>10</x>
+          <y>480</y>
+          <width>71</width>
+          <height>23</height>
+         </rect>
+        </property>
+        <property name="text">
+         <string>Export CSV</string>
         </property>
        </widget>
       </widget>
