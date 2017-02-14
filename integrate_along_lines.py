@@ -249,6 +249,7 @@ class RasterDataOnPolylines:
         self.dockwidget.rasterBox.clear()
         self.dockwidget.rasterBox_x.clear()
         self.dockwidget.rasterBox_y.clear()
+        self.dockwidget.rasterBox_data.clear()
         self.dockwidget.vectorBox.addItems(layers_names_v)
         self.dockwidget.rasterBox.addItems(layers_names_r)
         self.dockwidget.rasterBox_x.addItems(layers_names_r)
