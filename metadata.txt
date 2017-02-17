@@ -10,7 +10,7 @@
 name=Raster Data On Polylines
 qgisMinimumVersion=2.0
 description=Extract and manipulate raster data along polylines. Compute integrals, normal and tangent components.
-version=0.1
+version=0.1.1
 author=Sebastien Blaise
 email=s.blaise@fugro.com
 
